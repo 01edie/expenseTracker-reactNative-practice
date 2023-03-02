@@ -4,7 +4,7 @@ import { GlobalStyles } from "../../Styles";
 
 function ExpensesSummary({ periodDetails, expenses }) {
   const totalExpense = expenses.reduce(
-    (sum, expense) => sum + expense.amount,
+    (sum, expense) => sum + Number(expense.amount),
     0
   );
   return (
