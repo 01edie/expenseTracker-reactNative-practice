@@ -1,11 +1,15 @@
+import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Provider } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import { Entypo } from "@expo/vector-icons";
 import { FontAwesome } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+// import AppLoading from "expo-app-loading";
+import { Skeleton } from "@rneui/themed";
 
 import ManageExpense from "./screens/ManageExpense";
 import AllExpenses from "./screens/AllExpenses";
@@ -13,19 +17,55 @@ import RecentExpenses from "./screens/RecentExpenses";
 import { GlobalStyles } from "./Styles";
 import IconButton from "./components/UI/IconButton";
 import { store } from "./store";
-
+import { initiateData } from "./store/expensesSlice";
 
 export default function App() {
   const Stack = createNativeStackNavigator();
   const Tab = createBottomTabNavigator();
 
-
   function Tabs() {
+    const [loading, setLoading] = useState(false);
+
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+      const getData = async () => {
+        setLoading(true);
+        try {
+          const value = await AsyncStorage.getItem("@storage_exp");
+          setLoading(false);
+          if (value !== null) {
+            // value previously stored
+            if (Array.isArray(JSON.parse(value))) {
+              dispatch(initiateData(JSON.parse(value)));
+            } else {
+              // ...
+            }
+          }
+        } catch (e) {
+          // error reading value
+          Alert.alert("Error", "Fetching data from source failed");
+          console.log(e);
+        }
+      };
+
+      getData();
+    }, []);
+
+    if (loading) {
+      return (
+        <Skeleton
+          style={{ flex: 1, backgroundColor: GlobalStyles.colors.primary500 }}
+          animation="pulse"
+        />
+      );
+    }
+
     return (
       // Tabs
 
       <Tab.Navigator
-        screenOptions={({navigation})=>({
+        screenOptions={({ navigation }) => ({
           headerTintColor: "white",
           headerStyle: {
             backgroundColor: GlobalStyles.colors.primary500,
@@ -37,11 +77,18 @@ export default function App() {
             // borderTopColor: "#000",
             // borderTopWidth: 2,
           },
-        
+
           tabBarActiveTintColor: GlobalStyles.colors.accent500,
           tabBarInactiveBackgroundColor: GlobalStyles.colors.primary600,
           tabBarActiveBackgroundColor: GlobalStyles.colors.primary500,
-          headerRight:({tintColor})=><IconButton icon='add' size={32} color={tintColor} onPress={()=>navigation.navigate('manage')}/>
+          headerRight: ({ tintColor }) => (
+            <IconButton
+              icon="add"
+              size={32}
+              color={tintColor}
+              onPress={() => navigation.navigate("manage")}
+            />
+          ),
         })}
       >
         <Tab.Screen
@@ -52,7 +99,7 @@ export default function App() {
             tabBarIcon: ({ color, size }) => (
               <Entypo name="time-slot" size={size} color={color} />
             ),
-           
+
             tabBarItemStyle: {
               padding: 3,
               // backgroundColor:'aqua'
@@ -87,17 +134,19 @@ export default function App() {
     <Provider store={store}>
       <StatusBar style="light" />
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{
-          headerTintColor: "white",
-          headerStyle: {
-            backgroundColor: GlobalStyles.colors.primary500,
-            borderBottomWidth:1,
-            borderColor:'#fff'
-          },
-          // presentation:'modal',
-          animation:'fade_from_bottom',
-          // animationDuration:5
-        }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerTintColor: "white",
+            headerStyle: {
+              backgroundColor: GlobalStyles.colors.primary500,
+              borderBottomWidth: 1,
+              borderColor: "#fff",
+            },
+            // presentation:'modal',
+            animation: "fade_from_bottom",
+            // animationDuration:5
+          }}
+        >
           {/* Stacks */}
 
           <Stack.Screen
